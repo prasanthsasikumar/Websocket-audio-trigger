@@ -3,7 +3,7 @@ const player = require('play-sound')(opts = {});
 const os = require('os');
 
 // Configuration
-const PORT = 8080;
+const PORT = 3000;
 const AUDIO_FILE = './audio.mp3'; // Place your MP3 file here
 
 // Get local IP address
