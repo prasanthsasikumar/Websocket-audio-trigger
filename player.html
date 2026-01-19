@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Player - Server</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            font-weight: 500;
+        }
+
+        .status.disconnected {
+            background: #fee;
+            color: #c33;
+        }
+
+        .status.connected {
+            background: #efe;
+            color: #3c3;
+        }
+
+        .status.playing {
+            background: #e3f2fd;
+            color: #1976d2;
+            animation: pulse 1s ease infinite;
+        }
+
+        .audio-visualizer {
+            width: 100%;
+            height: 150px;
+            background: #f5f5f5;
+            border-radius: 10px;
+            margin: 30px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 4em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .audio-visualizer.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .bars {
+            display: flex;
+            gap: 5px;
+            align-items: flex-end;
+            height: 80px;
+        }
+
+        .bar {
+            width: 10px;
+            background: linear-gradient(to top, #667eea, #764ba2);
+            border-radius: 5px 5px 0 0;
+            transition: height 0.1s ease;
+        }
+
+        .info {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 10px;
+            text-align: left;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            color: #666;
+        }
+
+        .info-value {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .audio-controls {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+
+        .audio-controls label {
+            display: block;
+            margin-bottom: 10px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .audio-controls input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px dashed #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .audio-controls input[type="range"] {
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .config {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff9e6;
+            border-radius: 10px;
+            border-left: 4px solid #ffc107;
+        }
+
+        .config input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        .config button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background: #f5576c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        .config button:hover {
+            background: #e04556;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        @keyframes barAnimation {
+            0%, 100% { height: 20px; }
+            50% { height: 60px; }
+        }
+
+        .bar.animate {
+            animation: barAnimation 0.5s ease infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 Audio Player</h1>
+        <p class="subtitle">Waiting for triggers from remote clients</p>
+        
+        <div id="status" class="status disconnected">
+            ⏳ Connecting to server...
+        </div>
+
+        <div class="audio-visualizer" id="visualizer">
+            🔊
+        </div>
+
+        <div class="audio-controls">
+            <label>📁 Select Audio File (MP3, WAV, etc.)</label>
+            <input type="file" id="audioFile" accept="audio/*">
+            
+            <label style="margin-top: 15px;">🔊 Volume: <span id="volumeValue">50%</span></label>
+            <input type="range" id="volume" min="0" max="100" value="50">
+        </div>
+
+        <div class="info">
+            <div class="info-item">
+                <span>Current Audio:</span>
+                <span class="info-value" id="audioName">No file selected</span>
+            </div>
+            <div class="info-item">
+                <span>Times Triggered:</span>
+                <span class="info-value" id="triggerCount">0</span>
+            </div>
+            <div class="info-item">
+                <span>Connected Triggers:</span>
+                <span class="info-value" id="triggerClients">0</span>
+            </div>
+            <div class="info-item">
+                <span>Server Status:</span>
+                <span class="info-value" id="serverStatus">Disconnected</span>
+            </div>
+        </div>
+
+        <div class="config">
+            <strong>⚙️ WebSocket Server URL</strong>
+            <input type="text" id="serverUrl" placeholder="wss://your-server.onrender.com">
+            <button onclick="reconnect()">Connect</button>
+        </div>
+    </div>
+
+    <audio id="audio" preload="auto"></audio>
+
+    <script>
+        let ws;
+        let isConnected = false;
+        let audio = document.getElementById('audio');
+        let triggerCountValue = 0;
+
+        const statusDiv = document.getElementById('status');
+        const visualizer = document.getElementById('visualizer');
+        const audioName = document.getElementById('audioName');
+        const triggerCount = document.getElementById('triggerCount');
+        const triggerClients = document.getElementById('triggerClients');
+        const serverStatus = document.getElementById('serverStatus');
+        const serverUrlInput = document.getElementById('serverUrl');
+        const audioFileInput = document.getElementById('audioFile');
+        const volumeSlider = document.getElementById('volume');
+        const volumeValue = document.getElementById('volumeValue');
+
+        // Load saved settings
+        const savedUrl = localStorage.getItem('serverUrl');
+        const savedVolume = localStorage.getItem('volume') || 50;
+        
+        if (savedUrl) {
+            serverUrlInput.value = savedUrl;
+            connectToServer(savedUrl);
+        }
+        
+        volumeSlider.value = savedVolume;
+        audio.volume = savedVolume / 100;
+        volumeValue.textContent = savedVolume + '%';
+
+        // Audio file selection
+        audioFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                audio.src = url;
+                audioName.textContent = file.name;
+                localStorage.setItem('audioFileName', file.name);
+            }
+        });
+
+        // Volume control
+        volumeSlider.addEventListener('input', (e) => {
+            const volume = e.target.value;
+            audio.volume = volume / 100;
+            volumeValue.textContent = volume + '%';
+            localStorage.setItem('volume', volume);
+        });
+
+        function connectToServer(url) {
+            if (!url) {
+                statusDiv.textContent = '⚠️ Please enter server URL';
+                statusDiv.className = 'status disconnected';
+                return;
+            }
+
+            statusDiv.textContent = '⏳ Connecting...';
+            statusDiv.className = 'status disconnected';
+
+            try {
+                ws = new WebSocket(url);
+
+                ws.onopen = () => {
+                    isConnected = true;
+                    ws.send(JSON.stringify({ type: 'register', role: 'player' }));
+                    statusDiv.textContent = '✅ Connected - Ready to play';
+                    statusDiv.className = 'status connected';
+                    serverStatus.textContent = 'Connected';
+                };
+
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.type === 'trigger') {
+                        playAudio();
+                    } else if (data.type === 'status') {
+                        triggerClients.textContent = data.triggers;
+                    }
+                };
+
+                ws.onclose = () => {
+                    isConnected = false;
+                    statusDiv.textContent = '❌ Disconnected';
+                    statusDiv.className = 'status disconnected';
+                    serverStatus.textContent = 'Disconnected';
+                    triggerClients.textContent = '0';
+                    
+                    // Attempt reconnection
+                    setTimeout(() => connectToServer(url), 3000);
+                };
+
+                ws.onerror = (error) => {
+                    console.error('Connection error:', error);
+                    statusDiv.textContent = '❌ Connection failed';
+                    statusDiv.className = 'status disconnected';
+                };
+            } catch (error) {
+                console.error('Failed to connect:', error);
+                statusDiv.textContent = '❌ Invalid server URL';
+                statusDiv.className = 'status disconnected';
+            }
+        }
+
+        function playAudio() {
+            if (!audio.src) {
+                statusDiv.textContent = '⚠️ No audio file selected!';
+                statusDiv.className = 'status disconnected';
+                setTimeout(() => {
+                    if (isConnected) {
+                        statusDiv.textContent = '✅ Connected - Ready to play';
+                        statusDiv.className = 'status connected';
+                    }
+                }, 2000);
+                return;
+            }
+
+            // Update UI
+            triggerCountValue++;
+            triggerCount.textContent = triggerCountValue;
+            statusDiv.textContent = '🎵 Playing audio...';
+            statusDiv.className = 'status playing';
+            visualizer.classList.add('active');
+
+            // Add animated bars
+            visualizer.innerHTML = '';
+            const bars = document.createElement('div');
+            bars.className = 'bars';
+            for (let i = 0; i < 10; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'bar animate';
+                bar.style.animationDelay = `${i * 0.1}s`;
+                bar.style.height = '20px';
+                bars.appendChild(bar);
+            }
+            visualizer.appendChild(bars);
+
+            // Play audio
+            audio.currentTime = 0;
+            audio.play().catch(err => {
+                console.error('Playback error:', err);
+                statusDiv.textContent = '❌ Playback failed';
+            });
+
+            // Send acknowledgment
+            if (isConnected && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'played' }));
+            }
+
+            // Reset UI after playback
+            audio.onended = () => {
+                visualizer.classList.remove('active');
+                visualizer.innerHTML = '🔊';
+                if (isConnected) {
+                    statusDiv.textContent = '✅ Connected - Ready to play';
+                    statusDiv.className = 'status connected';
+                }
+            };
+        }
+
+        function reconnect() {
+            const url = serverUrlInput.value.trim();
+            if (url) {
+                localStorage.setItem('serverUrl', url);
+                if (ws) {
+                    ws.close();
+                }
+                connectToServer(url);
+            }
+        }
+
+        // Load saved audio file name
+        const savedFileName = localStorage.getItem('audioFileName');
+        if (savedFileName) {
+            audioName.textContent = savedFileName + ' (please reselect)';
+        }
+    </script>
+</body>
+</html>

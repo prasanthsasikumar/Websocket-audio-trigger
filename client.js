@@ -2,7 +2,7 @@ const WebSocket = require('ws');
 const readline = require('readline');
 
 // Configuration - CHANGE THIS TO THE SERVER'S IP ADDRESS
-const SERVER_IP = '10.249.115.72'; // Replace with the actual server IP
+const SERVER_IP = 'localhost'; // Replace with the actual server IP
 const SERVER_PORT = 3000;
 
 let ws;

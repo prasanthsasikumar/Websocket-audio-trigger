@@ -1,13 +1,15 @@
 {
   "name": "websocket-audio-trigger",
-  "version": "1.0.0",
-  "description": "Trigger MP3 audio playback across network using WebSocket",
-  "main": "server.js",
+  "version": "2.0.0",
+  "description": "Trigger MP3 audio playback across network using WebSocket - Web & CLI versions",
+  "main": "relay-server.js",
   "scripts": {
+    "relay": "node relay-server.js",
     "server": "node server.js",
-    "client": "node client.js"
+    "client": "node client.js",
+    "start": "node relay-server.js"
   },
-  "keywords": ["websocket", "audio", "trigger"],
+  "keywords": ["websocket", "audio", "trigger", "remote", "web"],
   "author": "",
   "license": "ISC",
   "dependencies": {
