@@ -192,12 +192,13 @@
         const serverStatus = document.getElementById('serverStatus');
         const serverUrlInput = document.getElementById('serverUrl');
 
-        // Load saved server URL
-        const savedUrl = localStorage.getItem('serverUrl');
-        if (savedUrl) {
-            serverUrlInput.value = savedUrl;
-            connectToServer(savedUrl);
-        }
+        // Default server URL
+        const defaultUrl = 'wss://websocket-audio-trigger.onrender.com';
+        
+        // Load saved server URL or use default
+        const savedUrl = localStorage.getItem('serverUrl') || defaultUrl;
+        serverUrlInput.value = savedUrl;
+        connectToServer(savedUrl);
 
         function connectToServer(url) {
             if (!url) {

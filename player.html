@@ -260,17 +260,20 @@
         const volumeValue = document.getElementById('volumeValue');
 
         // Load saved settings
-        const savedUrl = localStorage.getItem('serverUrl');
+        const defaultUrl = 'wss://websocket-audio-trigger.onrender.com';
+        const savedUrl = localStorage.getItem('serverUrl') || defaultUrl;
         const savedVolume = localStorage.getItem('volume') || 50;
         
-        if (savedUrl) {
-            serverUrlInput.value = savedUrl;
-            connectToServer(savedUrl);
-        }
+        serverUrlInput.value = savedUrl;
+        connectToServer(savedUrl);
         
         volumeSlider.value = savedVolume;
         audio.volume = savedVolume / 100;
         volumeValue.textContent = savedVolume + '%';
+        
+        // Set default audio source
+        audio.src = './audio.mp3';
+        audioName.textContent = 'audio.mp3 (default)';
 
         // Audio file selection
         audioFileInput.addEventListener('change', (e) => {
